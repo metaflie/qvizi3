@@ -1,0 +1,41 @@
+import requests
+import json
+import sqlite3
+
+date = input("შეიყვანეთ თვე და დღე რიცხვობრივად (მაგალითად - 9/28): ").split("/")
+
+r = requests.get(f"http://history.muffinlabs.com/date/{date[0]}/{date[1]}")
+print(r.status_code)
+print(r.headers)
+print(r.encoding)
+
+json_file = r.json()
+json_dict = json.loads(r.text)
+with open("history.json", "w") as f:
+    json.dump(json_dict, f, indent=4)
+
+j_date = json_dict["date"]
+print(f"Date - {j_date}")
+
+h_info = []
+for info in json_dict["data"]["Events"]:
+    year = info["year"]
+    text = info["text"]
+    row = (year, text)
+    h_info.append(row)
+    print(f"Year: {year} | Info: {text}")
+
+"""ბაზაში ვინახავ მომხმარებლის მიერ შეყვანილ თარიღზე ისტორიულ ინფორმაციებს წლების მიხედვით,
+თუ მომხმარებელი შეიყვანს მაგალითად 9/28, ბაზაში აისახება 28 სექტემბერს მომხდარი ისტორიული მოვლენები და დალაგდება
+ზრდის მიხედვით (წლებით)"""
+conn = sqlite3.connect("history.sqlite")
+c = conn.cursor()
+c.execute("""CREATE TABLE IF NOT EXISTS history_info (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          year INTEGER,
+          info TEXT)""")
+conn.commit()
+
+c.executemany("INSERT INTO history_info (year, info) VALUES (?,?)", h_info)
+conn.commit()
+conn.close()
