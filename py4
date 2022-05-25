@@ -1,0 +1,31 @@
+import requests
+from bs4 import BeautifulSoup
+from time import sleep
+from random import randint
+import csv
+
+payload = {'page': 1, 'subcategory': 2}
+h = {'Accept-Language': 'en-US'}
+
+url = 'https://allmarket.ge/product/'
+
+file = open('phones.csv', 'w', newline='\n', encoding='utf-8_sig')
+file_obj = csv.writer(file)
+file_obj.writerow(['Text', 'Price'])
+while payload['page']<6:
+    r = requests.get(url, params=payload, headers=h)
+    content = r.text
+
+
+    soup = BeautifulSoup(content, 'html.parser')
+    block = soup.find('div', class_='products-list')
+    all_phones = block.find_all('div', class_='product-layout')
+    # print(all_phones)
+
+    for each in all_phones:
+        text = each.h4.text.strip()
+        price = each.find('span', {'class': 'price-new'}).text
+        print(text, price)
+        file_obj.writerow([text, price])
+    payload['page'] +=1
+    sleep(randint(15, 20))
